@@ -7,6 +7,7 @@ import { zodTextFormat } from "openai/helpers/zod";
 import { z } from "zod";
 import {
   DEFAULT_BOOK_JOB_MODELS,
+  normalizeKnownModelAlias,
   resolveBookJobModelValue,
   type BookJobModelOverrides
 } from "@/lib/book-job-models";
@@ -91,6 +92,8 @@ const ANTHROPIC_PROSE_MAX_TOKENS = 10000;
 const OPENAI_PROSE_MIN_TOKENS = 1200;
 const OPENAI_PROSE_MAX_TOKENS = 9000;
 const STRUCTURED_STAGE_MAX_TOKENS = 1400;
+// Current Claude models always think, and max_tokens caps thinking plus answer.
+const ANTHROPIC_THINKING_HEADROOM_TOKENS = 6000;
 const EXTRACT_STAGE_MAX_TOKENS = 900;
 const EXTRACT_ARRAY_MAX_ITEMS = 3;
 const EXTRACT_SCENE_NOTES_MAX_ITEMS = 4;
@@ -1116,7 +1119,7 @@ async function requestAnthropicStructured<T>(params: {
     const message = await params.client.messages.parse({
       betas: [...ANTHROPIC_CACHE_BETAS],
       model: params.modelName,
-      max_tokens: params.maxTokens,
+      max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
       system: params.systemBlocks,
       messages: [
         {
@@ -1152,7 +1155,7 @@ async function requestAnthropicText(params: {
   const startedAt = Date.now();
   const message = await params.client.messages.create({
     model: params.modelName,
-    max_tokens: params.maxTokens,
+    max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
     system: params.systemBlocks,
     messages: [
       {
@@ -2499,7 +2502,7 @@ async function requestAnthropicStructuredFallback<T>(
 ) {
   const fallbackMessage = await params.client.messages.create({
     model: params.modelName,
-    max_tokens: params.maxTokens,
+    max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
     system: params.systemBlocks,
     messages: [
       {
@@ -2522,7 +2525,7 @@ async function requestAnthropicStructuredFallback<T>(
   } catch (fallbackError) {
     const retryMessage = await params.client.messages.create({
       model: params.modelName,
-      max_tokens: params.maxTokens,
+      max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
       system: params.systemBlocks,
       messages: [
         {
@@ -2907,11 +2910,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function normalizeAnthropicModelName(value: string) {
   const normalized = value.trim();
 
-  if (normalized === "claude-3-5-haiku-20241022" || normalized === "claude-haiku-4-5") {
-    return "claude-haiku-4-5-20251001";
-  }
-
-  return normalized;
+  return normalizeKnownModelAlias(normalized) ?? normalized;
 }
 
 function normalizeText(value: string) {

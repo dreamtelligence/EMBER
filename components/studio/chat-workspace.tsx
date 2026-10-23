@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BOOK_JOB_MODEL_PRESETS, DEFAULT_BOOK_JOB_MODELS } from "@/lib/book-job-models";
+import { BOOK_JOB_MODEL_PRESETS, DEFAULT_BOOK_JOB_MODELS, normalizeKnownModelAlias } from "@/lib/book-job-models";
 import {
   createDefaultAssistantContextSelection,
   type AssistantContextSelection,
@@ -597,15 +597,7 @@ function resolveProviderModelKey(provider: AssistantProvider) {
 }
 
 function normalizeLegacyChatModel(value: string) {
-  if (value === "claude-opus-4-7") {
-    return "claude-opus-4-6";
-  }
-
-  if (value === "gpt-5.4-pro" || value === "gpt-5.4-thinking") {
-    return "gpt-5.4";
-  }
-
-  return value;
+  return normalizeKnownModelAlias(value) ?? value;
 }
 
 function formatOutputModeLabel(mode: AssistantOutputMode) {

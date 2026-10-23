@@ -289,7 +289,7 @@ async function generateWithAnthropic(
   });
   const message = await client.messages.parse({
     model: modelName,
-    max_tokens: 2200,
+    max_tokens: 8200,
     system: buildAnthropicSystemPrompt(story, outputMode),
     messages: [
       {

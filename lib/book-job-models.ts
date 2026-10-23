@@ -8,15 +8,31 @@ export const BOOK_JOB_PROVIDER_STORAGE_KEY = "ember_book_job_provider";
 export const BOOK_JOB_MODEL_STORAGE_KEY = "ember_book_job_models";
 
 export const DEFAULT_BOOK_JOB_MODELS: Record<BookJobModelKey, string> = {
-  openai: "gpt-5.5",
-  anthropic: "claude-sonnet-4-6",
-  anthropicContinuity: "claude-sonnet-4-6"
+  openai: "gpt-6.1-sol",
+  anthropic: "claude-sonnet-5-5",
+  anthropicContinuity: "claude-sonnet-5-5"
 };
 
 export const BOOK_JOB_MODEL_PRESETS: Record<BookJobModelKey, string[]> = {
-  openai: ["gpt-5.5", "gpt-5.4", "gpt-5.4-mini"],
-  anthropic: ["claude-opus-4-7", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
-  anthropicContinuity: ["claude-sonnet-4-6", "claude-opus-4-7", "claude-haiku-4-5-20251001"]
+  openai: ["gpt-6.1-sol", "gpt-6-astra"],
+  anthropic: ["claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"],
+  anthropicContinuity: ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1", "claude-haiku-5-5"]
+};
+
+// Model ids saved in browser storage, stories or env vars before the upgrade
+// resolve to their current successor.
+const LEGACY_MODEL_SUCCESSORS: Record<string, string> = {
+  "gpt-5.5": "gpt-6.1-sol",
+  "gpt-5.4": "gpt-6.1-sol",
+  "gpt-5.4-pro": "gpt-6.1-sol",
+  "gpt-5.4-thinking": "gpt-6.1-sol",
+  "gpt-5.4-mini": "gpt-6.1-sol",
+  "claude-opus-4-7": "claude-opus-5-5",
+  "claude-opus-4-6": "claude-opus-5-5",
+  "claude-sonnet-4-6": "claude-sonnet-5-5",
+  "claude-haiku-4-5": "claude-haiku-5-5",
+  "claude-haiku-4-5-20251001": "claude-haiku-5-5",
+  "claude-3-5-haiku-20241022": "claude-haiku-5-5"
 };
 
 export function createEmptyBookJobModelSelection(): BookJobModelSelection {
@@ -34,11 +50,9 @@ export function parseBookJobModelSelection(value: string | null): BookJobModelSe
       openai: typeof parsed.openai === "string" ? normalizeKnownModelAlias(parsed.openai) ?? "" : "",
       anthropic: typeof parsed.anthropic === "string" ? normalizeKnownModelAlias(parsed.anthropic) ?? "" : "",
       anthropicContinuity:
-        parsed.anthropicContinuity === "claude-haiku-4-5-20251001"
-          ? DEFAULT_BOOK_JOB_MODELS.anthropicContinuity
-          : typeof parsed.anthropicContinuity === "string"
-            ? normalizeKnownModelAlias(parsed.anthropicContinuity) ?? ""
-            : ""
+        typeof parsed.anthropicContinuity === "string"
+          ? normalizeKnownModelAlias(parsed.anthropicContinuity) ?? ""
+          : ""
     };
   } catch {
     return createEmptyBookJobModelSelection();
@@ -75,16 +89,12 @@ export function resolveBookJobModelValue(
   return fallbackValue;
 }
 
-function normalizeKnownModelAlias(value: string | undefined) {
+export function normalizeKnownModelAlias(value: string | undefined) {
   if (!value) {
     return undefined;
   }
 
-  if (value === "gpt-5.4-pro" || value === "gpt-5.4-thinking") {
-    return "gpt-5.4";
-  }
-
-  return value;
+  return LEGACY_MODEL_SUCCESSORS[value] ?? value;
 }
 
 export function isBookJobProviderOption(value: string): value is BookJobProviderOption {

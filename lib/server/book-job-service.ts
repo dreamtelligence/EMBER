@@ -94,6 +94,13 @@ const OPENAI_PROSE_MAX_TOKENS = 9000;
 const STRUCTURED_STAGE_MAX_TOKENS = 1400;
 // Current Claude models always think, and max_tokens caps thinking plus answer.
 const ANTHROPIC_THINKING_HEADROOM_TOKENS = 6000;
+// Effort per stage: prose gets deep thinking, bookkeeping stages stay cheap.
+const ANTHROPIC_STAGE_EFFORT = {
+  prose: "high",
+  extract: "low",
+  continuity: "medium",
+  quality: "low"
+} as const satisfies Record<string, AnthropicEffort>;
 const EXTRACT_STAGE_MAX_TOKENS = 900;
 const EXTRACT_ARRAY_MAX_ITEMS = 3;
 const EXTRACT_SCENE_NOTES_MAX_ITEMS = 4;
@@ -101,6 +108,8 @@ const EXTRACT_STRING_MAX_LENGTH = 100;
 const LENGTH_CONTROL_EMERGENCY_MIN_WORDS = 600;
 const LENGTH_CONTROL_EMERGENCY_MAX_WORDS = 2500;
 const ANTHROPIC_CACHE_TTL = "1h" as const;
+
+type AnthropicEffort = "low" | "medium" | "high" | "xhigh" | "max";
 const ANTHROPIC_CACHE_BETAS = ["extended-cache-ttl-2025-04-11"] as const;
 const buildAnthropicCacheRequestOptions = () => ({
   headers: {
@@ -429,6 +438,7 @@ async function generateWithAnthropic(
         client,
         modelName,
         maxTokens: resolveAnthropicProseMaxTokens(options.targetSceneWordsMax),
+        effort: ANTHROPIC_STAGE_EFFORT.prose,
         systemBlocks: buildAnthropicProseSystemPromptBlocks(packet, options),
         userPrompt: buildAnthropicScenePrompt({
           mode: "draft",
@@ -443,6 +453,7 @@ async function generateWithAnthropic(
         client,
         modelName,
         maxTokens: resolveAnthropicProseMaxTokens(options.targetSceneWordsMax),
+        effort: ANTHROPIC_STAGE_EFFORT.prose,
         systemBlocks: buildAnthropicProseSystemPromptBlocks(packet, options),
         userPrompt: buildAnthropicScenePrompt({
           mode: "expand",
@@ -458,6 +469,7 @@ async function generateWithAnthropic(
         client,
         modelName,
         maxTokens: resolveAnthropicProseMaxTokens(options.targetSceneWordsMax),
+        effort: ANTHROPIC_STAGE_EFFORT.prose,
         systemBlocks: buildAnthropicProseSystemPromptBlocks(packet, options),
         userPrompt: buildAnthropicScenePrompt({
           mode: "compress",
@@ -474,6 +486,7 @@ async function generateWithAnthropic(
         stageName: "extract",
         modelName: continuityModelName,
         maxTokens: EXTRACT_STAGE_MAX_TOKENS,
+        effort: ANTHROPIC_STAGE_EFFORT.extract,
         schema: stateExtractionSchema,
         systemBlocks: buildAnthropicSystemPromptBlocks(packet),
         userPrompt: buildStateExtractionPrompt(packet, options, beatPlan, finalSceneText)
@@ -485,6 +498,7 @@ async function generateWithAnthropic(
         stageName: "continuity",
         modelName: continuityModelName,
         maxTokens: STRUCTURED_STAGE_MAX_TOKENS,
+        effort: ANTHROPIC_STAGE_EFFORT.continuity,
         schema: continuityAuditSchema,
         systemBlocks: buildAnthropicSystemPromptBlocks(packet),
         userPrompt: buildContinuityAuditPrompt(
@@ -503,6 +517,7 @@ async function generateWithAnthropic(
         stageName: "quality_eval",
         modelName: continuityModelName,
         maxTokens: STRUCTURED_STAGE_MAX_TOKENS,
+        effort: ANTHROPIC_STAGE_EFFORT.quality,
         schema: qualityEvalSchema,
         systemBlocks: buildAnthropicSystemPromptBlocks(packet),
         userPrompt: buildQualityEvalPrompt(packet, options, beatPlan, finalSceneText, extractedState)
@@ -1110,6 +1125,7 @@ async function requestAnthropicStructured<T>(params: {
   stageName: AnthropicStructuredStageName;
   modelName: string;
   maxTokens: number;
+  effort: AnthropicEffort;
   schema: z.ZodType<T>;
   systemBlocks: Anthropic.TextBlockParam[];
   userPrompt: string;
@@ -1128,6 +1144,7 @@ async function requestAnthropicStructured<T>(params: {
         }
       ],
       output_config: {
+        effort: params.effort,
         format: zodOutputFormat(params.schema)
       }
     });
@@ -1149,6 +1166,7 @@ async function requestAnthropicText(params: {
   client: Anthropic;
   modelName: string;
   maxTokens: number;
+  effort: AnthropicEffort;
   systemBlocks: Anthropic.TextBlockParam[];
   userPrompt: string;
 }) {
@@ -1156,6 +1174,7 @@ async function requestAnthropicText(params: {
   const message = await params.client.messages.create({
     model: params.modelName,
     max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
+    output_config: { effort: params.effort },
     system: params.systemBlocks,
     messages: [
       {
@@ -2493,6 +2512,7 @@ async function requestAnthropicStructuredFallback<T>(
     stageName: AnthropicStructuredStageName;
     modelName: string;
     maxTokens: number;
+    effort: AnthropicEffort;
     schema: z.ZodType<T>;
     systemBlocks: Anthropic.TextBlockParam[];
     userPrompt: string;
@@ -2503,6 +2523,7 @@ async function requestAnthropicStructuredFallback<T>(
   const fallbackMessage = await params.client.messages.create({
     model: params.modelName,
     max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
+    output_config: { effort: params.effort },
     system: params.systemBlocks,
     messages: [
       {
@@ -2526,6 +2547,7 @@ async function requestAnthropicStructuredFallback<T>(
     const retryMessage = await params.client.messages.create({
       model: params.modelName,
       max_tokens: params.maxTokens + ANTHROPIC_THINKING_HEADROOM_TOKENS,
+      output_config: { effort: params.effort },
       system: params.systemBlocks,
       messages: [
         {

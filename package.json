@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test:book-state": "npx tsx --no-cache scripts/book-state-validator.test.ts",
+    "eval:prose": "npx tsx --no-cache --env-file=.env.local scripts/eval-prose.ts",
+    "eval:compare": "npx tsx --no-cache --env-file=.env.local scripts/eval-compare.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {

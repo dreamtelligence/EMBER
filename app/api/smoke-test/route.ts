@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { hasCronSecret } from "@/lib/server/cron-auth"
 import { supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
@@ -38,7 +39,11 @@ const EXPECTED_TABLES = [
   "submission_reviews"
 ]
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!hasCronSecret(request)) {
+    return NextResponse.json({ status: "UNAUTHORIZED" }, { status: 401 })
+  }
+
   try {
     const checks = await Promise.all(
       EXPECTED_TABLES.map(async (table) => {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { hasCronSecret } from "@/lib/server/cron-auth"
 import { supabaseAdmin } from "@/lib/supabase/server"
 
 export const runtime = "nodejs"
@@ -7,9 +8,7 @@ export const dynamic = "force-dynamic"
 // Called daily by Vercel Cron (vercel.json) so the Supabase Free project
 // sees real database activity and is not paused after 7 idle days.
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
-
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!hasCronSecret(request)) {
     return NextResponse.json({ status: "UNAUTHORIZED" }, { status: 401 })
   }
 

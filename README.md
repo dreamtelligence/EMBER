@@ -6,6 +6,18 @@ A scene-based writing environment for long-form fiction. The technical focus is 
 
 The reader is public. The studio, project data and generation endpoints require the author's credentials. Recruiters can inspect the implementation and run the deterministic checks without provider accounts.
 
+![Book editor with scene navigation and generation controls](public/images/studio_editor.png)
+
+*Existing studio screenshot using example fiction. It illustrates the authoring interface; model names shown in the image are not current provider guarantees.*
+
+## Reviewing the project
+
+1. Try the public reader for the presentation and branching story flow. The author studio is intentionally private.
+2. Start with [state validation](lib/book-state-validator.ts) and its [executable checks](scripts/book-state-validator.test.ts) for the deterministic part of the system.
+3. Follow [draft orchestration](lib/server/book-job-service.ts) into persistence and the [review UI](components/studio/book-state-diff-review.tsx) to see where model proposals require human approval.
+
+The [documentation index](docs/README.md) separates product guidance, pipeline conventions and database setup.
+
 ## What is implemented
 
 - Next.js 15, React 19 and TypeScript application with a Supabase persistence layer.
@@ -86,11 +98,11 @@ vercel deploy --prod
 
 | Area | Entry point |
 | --- | --- |
-| Studio UI | `components/studio/studio-workspace.tsx` |
-| Persistent story operations | `lib/server/studio-story-service.ts` |
-| Draft orchestration | `lib/server/book-job-service.ts` |
-| State validation and approval | `lib/book-state-validator.ts` |
-| State types and normalization | `lib/story-schema.ts` |
+| Studio UI | [Workspace](components/studio/studio-workspace.tsx) |
+| Persistent story operations | [Story service](lib/server/studio-story-service.ts) |
+| Draft orchestration | [Book job service](lib/server/book-job-service.ts) |
+| State validation and approval | [State validator](lib/book-state-validator.ts) |
+| State types and normalization | [Schema](lib/story-schema.ts), [locked facts](lib/book-locked-facts.ts) |
 | Studio access checks | `lib/server/studio-auth.ts`, `middleware.ts` |
 | Database setup | `supabase/migrations/` |
 | Public example reader | `public/legacy/` |
@@ -98,3 +110,5 @@ vercel deploy --prod
 ## Repository status
 
 The source is published for portfolio review. No project-wide open-source license file is currently included; third-party packages, model services and creative assets have their own terms. Demo fiction is example content, not a benchmark proving general writing quality.
+
+The deterministic engine and integration boundaries are separated, but several orchestration and workspace files are still large. This repository does not claim a completed modularization of those areas. See [development notes](docs/development.md) for the current structure and check boundaries.

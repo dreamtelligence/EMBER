@@ -32,3 +32,4 @@ scripts/sync-env-to-vercel.sh
 # Novel-director experiment outputs
 novel-director/examples/
 .env*
+!.env.example

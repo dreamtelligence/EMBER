@@ -1,41 +1,13 @@
 # Repository Guidelines
 
+## Current architecture constraints
 
-# TODO IMPORTEN ASK USER! 
+Locked-fact normalization, legacy mapping and getters already live in `lib/book-locked-facts.ts`; their types remain in `lib/story-schema.ts`. Reuse that boundary. A broader schema/engine split is deferred work and requires its own scoped change.
 
-0. lib/story-schema.ts
-
-Warum: Da sind jetzt nicht mehr nur Types drin, sondern auch viel Normalisierung/Legacy-Adapter/Helper:
-
-BookCommonLockedFacts
-BookDomesticSuspenseThrillerLockedFacts
-BookYaSuperheroOriginLockedFacts
-neues BookLockedFacts
-normalizeBookLockedFacts(...)
-Legacy-Mapping von alten flachen Feldern
-Getter wie getCommonLockedFacts, getDomesticSuspenseLockedFacts, getYaSuperheroLockedFacts
-Guards wie hasBookLockedFacts, hasDomesticSuspenseLockedFacts
-
-Sauberer wäre später vermutlich, das auszulagern nach z. B.:
-
-lib/book-locked-facts.ts
-
-Und story-schema.ts würde dann wieder schlanker bleiben: Types entweder dort lassen oder auch teils rüberziehen, aber Normalizer/Getter/Helper raus.
-
-1. Bootstrap darf keine Projektliterale enthalten:
-rg "Eva|Mila|Nora|Simon|Sonnengarten|Kita|Abholzeit|Leitungsbüro|Kundentermin|evaAlibiLocation|evaAlibiWindow|documentedPickupPerson" scripts/bootstrap-book-from-regie.ts
-
-2. YA-Engine darf keine Aftershock-Literale enthalten:
-rg "Veridium|Bixi|B\\.I\\.X|Chicago Advanced Science Center" lib/book-genre-engine-ya-superhero.ts scripts/bootstrap-book-from-regie.ts
-
-Erwartung:
-- Suche 1: Bootstrap keine Treffer.
-- Suche 2: keine Treffer in Bootstrap und YA-Engine.
-
-Einzige offene Architektur-Sache, die ich weiter im Auge behalten würde: deriveDomesticSuspenseLockedFacts darf bei engineMode === "default" nicht zu aggressiv Domestic-Facts ableiten. Das ist kein aktueller Aftershock-Fehler, aber wichtig für spätere Fantasy/Romance-Projekte.
+Keep bootstrap and reusable genre engines free of story-specific character, institution and setting literals. In default engine mode, avoid deriving genre-specific locked facts too aggressively. Private creative source files are not repository dependencies.
 
 ## Project Structure & Module Organization
-This repository is a Next.js app with the studio under `app/`, shared logic under `lib/`, and UI components under `components/`. The legacy storefront/reader that still powers `/` and `/story` lives in `public/legacy/` with its own `index.html`, `app.js`, `story.js`, `styles.css`, and image assets. Supabase SQL lives in `supabase/migrations/`. Planning material such as `STORY_PLAN.md` and `BOOK_STUDIO_GUIDE.md` is documentation, not runtime code.
+This repository is a Next.js app with the studio under `app/`, shared logic under `lib/`, and UI components under `components/`. The legacy storefront/reader that still powers `/` and `/story` lives in `public/legacy/` with its own `index.html`, `app.js`, `story.js`, `styles.css`, and image assets. Supabase SQL lives in `supabase/migrations/`. Developer and author documentation lives under `docs/`; private planning manuscripts are ignored and are not runtime code.
 
 ## Build, Test, and Development Commands
 Install dependencies and use the Next.js workflow:
@@ -51,7 +23,7 @@ Then open `http://localhost:3000`. Use `npm run build` as the main verification 
 Match the existing style in each layer: TypeScript/TSX in `app/`, `components/`, and `lib/` uses the repo's current semicolon-free style and double quotes only where already established; the legacy files in `public/legacy/` keep 2-space indentation, semicolon-free JavaScript, double quotes, and `function`-based helpers. Keep file names descriptive. In legacy `story.js`, use stable IDs such as `scene3` or `endingA`; in CSS, keep class names kebab-case such as `store-card--featured`.
 
 ## Testing Guidelines
-There is no formal automated test suite yet. Verify changes with `npm run build` and then manually test the affected flow in the browser. For legacy reader changes, check scene progression, localStorage resume behavior, conditional story branches, and responsive layout. After story or UI edits, test a fresh run and a resumed run by clearing and reusing browser storage.
+Run `npm run test:book-state`, `npm run test:studio-auth` and `npm run typecheck` for the existing deterministic and access checks. Run `npm run build` with valid local configuration for runtime changes, then manually verify the affected browser flow. For legacy reader changes, check scene progression, localStorage resume behavior, conditional story branches, and responsive layout. After story or UI edits, test a fresh run and a resumed run by clearing and reusing browser storage.
 
 ## Commit & Pull Request Guidelines
 Recent commits use short, lowercase summaries like `store front`. Keep commit messages concise and imperative, preferably one line focused on the user-visible change. Pull requests should include a short description, affected files, manual test notes, and screenshots or screen recordings for visual changes.
@@ -67,7 +39,7 @@ For the Book pipeline, keep the docs aligned with the current runtime instead of
 - Remote jobs use the lean scene pipeline: `beat_plan` and `rewrite` remain compatibility stages, but the remote path skips separate model calls for them. Draft prose is written directly from Scene Intention; `length_control` only runs an expand/compress pass for strong length outliers before `extract`, `continuity`, and `quality_eval`.
 - Scene Cards are parsed from fenced code blocks. Hard fields are only `pov`, `location` / `ort`, `timeAnchor` / `uhrzeit`, locked facts, canon names, and explicit continuity anchors. `objective`, `opening`, `coreAction`, `dramaticBeat`, `ending`, and `closingLine` are soft guidance, not prose commands.
 - Hard custom keys are limited to `object_anchor`, `prop_anchor`, `locked_object`, and `locked_material`. Legacy `required_material` must be mapped to `locked_material` only during import when it is a true continuity requirement. `proof_object` / `beweisobjekt`, `alltagswaffe`, `ersetzungsmoment`, `false_friend_signal`, and `kindmoment` / `mila_kindmoment` are soft material/pressure guidance.
-- Use `Regie-Die-falsche-Abholung.md` as the canonical creative example, but keep technical onboarding in `BOOK_PIPELINE_AGENT_NOTES.md`. For new book projects, convert the author's raw thoughts into a compact creative blueprint: Core, World/Pressure System, Characters, Canon Facts, Open Threads, Act Map, and fenced Scene Cards with `situation`, `want`, `pressure`, `material`, `turn`, `irreversible_change`, `thread`, `avoid`, and optional `aftertaste`.
+- Author-specific Regie files are private local inputs; use the tracked studio guide for public onboarding and keep technical pipeline rules in `docs/architecture/book-pipeline.md`. For new book projects, convert the author's raw thoughts into a compact creative blueprint: Core, World/Pressure System, Characters, Canon Facts, Open Threads, Act Map, and fenced Scene Cards with `situation`, `want`, `pressure`, `material`, `turn`, `irreversible_change`, `thread`, `avoid`, and optional `aftertaste`.
 - Current quality audits warn, they do not rewrite prose or create acceptance blockers. Smoothness markers, abstract noun density, over-precise pressure-figure timing, functional/regie language, and repeated Scene Card `ending_type` patterns belong in `styleDriftNotes` or `qualityWarnings`; only existing continuity guards should block acceptance.
 - Scene Cards should include `ending_type` when possible. Vary endings across windows of scenes: not every chapter may end on object/proof intrusion. Mix proof with decision, silence, social consequence, access loss, quiet countermove, child echo, or apparent relief.
 - `authorIntent` and `currentFocus` live in the Master Brief JSON and are soft prompt controls: `authorIntent` is the long-term book promise, `currentFocus` is the next 1-3 scene focus. They should guide drafting without overriding hard canon constraints.

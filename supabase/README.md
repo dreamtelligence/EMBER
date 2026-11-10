@@ -1,28 +1,24 @@
-# Supabase Backbone
+# Supabase persistence
 
-This folder contains the first production-grade database backbone for EMBER.
+EMBER's author studio persists story structure, scenes, context packets, generation jobs and reviewed state changes in Supabase Postgres. The static public reader does not query this database.
 
-## Scope
+## Schema map
 
-The initial migration models:
+- Workspace and membership tables define ownership relationships for the schema.
+- Story, act, chapter, scene, block and choice tables represent authored content.
+- World bible, canon, character state, threads, scene cards and context packs form the book memory.
+- Draft jobs, stage runs, quality evaluations, human-edit examples and StateDiff records support the writer/review loop.
 
-- workspaces and membership roles
-- stories, acts, chapters, scenes, blocks, choices, and variables
-- story versions and world bible entries
-- book-specific artifacts such as canon facts, character states, open threads, scene cards, and context packs
-- draft jobs, AI runs, AI patches, playtest sessions, submissions, and review records
+`migrations/` is the chronological source of schema and data changes. Some later migrations replace earlier provider constraints. Read the complete sequence rather than treating the initial migration as the current schema. The story-specific character rename is historical example-content maintenance, not a general normalization rule.
 
-## Design Notes
+## Local setup
 
-- `workspace_id` is present on high-churn child tables on purpose.
-  This keeps RLS policies simple, explicit, and performant.
-- Book memory artifacts are stored as first-class tables rather than one opaque JSON column.
-  This matches the product architecture: the database is the memory system, not the chat session.
-- The schema is designed for Supabase Postgres and assumes `auth.users` exists.
+Use your own isolated Supabase project, configure the variables in [`.env.example`](../.env.example), and apply the migrations in order. They assume Supabase's `auth.users` and roles exist. The import script and app build validate database configuration even when they do not make a database request.
 
-## Next Steps
+Never run a reset, an author import or migration experiments against the live author workspace. This repository does not include a copy of its private manuscripts or database.
 
-- Apply the migration to a real Supabase project.
-- Generate typed database bindings for the app layer.
-- Replace local-only storage flows with server persistence and version snapshots.
-- Add background job execution and audit logging on top of the `ai_runs` and `book_draft_jobs` tables.
+## Access model
+
+The deployed application is a single-author studio protected by HTTP Basic authentication and explicit server route checks. Server persistence uses the service-role client, which bypasses RLS; schema membership policies alone do not make this application a multi-tenant service. See the [access boundary](../README.md#access-boundary) and [authentication helper](../lib/server/studio-auth.ts).
+
+The deterministic tests require neither a running database nor provider credentials. They do not prove that migrations have been applied to a particular deployment, that backups exist, or that multiple end-user accounts are isolated by the current server code.

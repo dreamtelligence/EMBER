@@ -1,4 +1,7 @@
 import Link from "next/link"
+import { headers } from "next/headers"
+import { redirect } from "next/navigation"
+import { hasStudioAccess } from "@/lib/server/studio-auth"
 import { StudioWorkspace } from "@/components/studio/studio-workspace"
 import { listStudioStories, loadStudioStory } from "@/lib/server/studio-story-service"
 
@@ -9,6 +12,7 @@ type StudioPageProps = {
 }
 
 export default async function StudioPage({ searchParams }: StudioPageProps) {
+  if (!hasStudioAccess(await headers())) redirect("/")
   const resolvedSearchParams = searchParams ? await searchParams : undefined
   const story = await loadStudioStory(resolvedSearchParams?.storyId ?? null)
   const stories = await listStudioStories()

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test:book-state": "npx tsx --no-cache scripts/book-state-validator.test.ts",
+    "test:studio-auth": "tsx scripts/studio-auth.test.ts",
     "eval:prose": "npx tsx --no-cache --env-file=.env.local scripts/eval-prose.ts",
     "eval:compare": "npx tsx --no-cache --env-file=.env.local scripts/eval-compare.ts",
     "typecheck": "next typegen && tsc --noEmit"
@@ -14,7 +15,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
     "@supabase/supabase-js": "^2.103.3",
-    "next": "^15.0.0",
+    "next": "15.5.29",
     "openai": "^6.34.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateStoryChat } from "@/lib/server/story-chat-service";
+import { studioAccessResponse } from "@/lib/server/studio-auth";
 import type {
   AssistantContextSelection,
   AssistantModelSelection,
@@ -12,6 +13,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const denied = studioAccessResponse(request.headers);
+  if (denied) return denied;
   try {
     const body = (await request.json()) as {
       story?: StoryDocument;

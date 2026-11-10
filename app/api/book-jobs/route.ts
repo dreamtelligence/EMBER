@@ -4,11 +4,14 @@ import { generateBookDraftJob, type BookJobProvider } from "@/lib/server/book-jo
 import { loadHumanEditExamplesForWorkspace } from "@/lib/server/studio-story-service";
 import type { SceneContextPacket } from "@/lib/book-engine";
 import type { StoryDocument } from "@/lib/story-schema";
+import { studioAccessResponse } from "@/lib/server/studio-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
+  const denied = studioAccessResponse(request.headers);
+  if (denied) return denied;
   try {
     const body = (await request.json()) as {
       story?: StoryDocument;

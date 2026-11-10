@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { deleteStudioStory, saveStudioStory } from "@/lib/server/studio-story-service"
 import type { StoryDocument } from "@/lib/story-schema"
+import { studioAccessResponse } from "@/lib/server/studio-auth"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -9,6 +10,8 @@ export async function PUT(
   request: Request,
   context: { params: Promise<{ storyId: string }> }
 ) {
+  const denied = studioAccessResponse(request.headers)
+  if (denied) return denied
   try {
     const { storyId } = await context.params
     const story = (await request.json()) as StoryDocument
@@ -39,9 +42,11 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ storyId: string }> }
 ) {
+  const denied = studioAccessResponse(request.headers)
+  if (denied) return denied
   try {
     const { storyId } = await context.params
 

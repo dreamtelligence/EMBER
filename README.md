@@ -18,6 +18,8 @@ The reader is public. The studio, project data and generation endpoints require 
 
 The [documentation index](docs/README.md) separates product guidance, pipeline conventions and database setup.
 
+A complete generated prose example with run metadata and editorial notes is available in the [Opus Direct First Scene portfolio sample](docs/samples/opus-direct-first-scene.md).
+
 ## What is implemented
 
 - Next.js 15, React 19 and TypeScript application with a Supabase persistence layer.
